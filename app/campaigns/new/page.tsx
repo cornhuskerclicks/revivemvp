@@ -13,15 +13,7 @@ export default async function NewCampaignPage() {
 
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", data.user.id).single()
 
-  const { data: twilioAccount } = await supabase
-    .from("twilio_accounts")
-    .select("*")
-    .eq("user_id", data.user.id)
-    .single()
-
-  if (!twilioAccount) {
-    redirect("/dashboard?tab=settings")
-  }
+  // The check will happen when starting the campaign instead
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -32,7 +24,7 @@ export default async function NewCampaignPage() {
       <NavBar userEmail={data.user.email} userName={profile?.full_name || undefined} />
 
       <div className="container mx-auto px-4 py-8 relative z-10 max-w-4xl">
-        <CampaignWizard userId={data.user.id} twilioAccount={twilioAccount} />
+        <CampaignWizard userId={data.user.id} />
       </div>
     </div>
   )

@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast"
 
 interface CampaignWizardProps {
   userId: string
-  twilioAccount: any
+  twilioAccount?: any // Made optional since campaigns can be created before A2P registration
 }
 
 export default function CampaignWizard({ userId, twilioAccount }: CampaignWizardProps) {
@@ -20,7 +20,7 @@ export default function CampaignWizard({ userId, twilioAccount }: CampaignWizard
   const [currentStep, setCurrentStep] = useState(1)
   const [campaignData, setCampaignData] = useState({
     name: "",
-    twilioPhoneNumber: twilioAccount?.phone_number || "",
+    twilioPhoneNumber: twilioAccount?.phone_number || "", // Will be empty until A2P registration
     batchSize: 50,
     dripSize: 100,
     dripIntervalDays: 3,
