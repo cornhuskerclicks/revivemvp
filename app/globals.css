@@ -1,0 +1,511 @@
+/* RE:VIVE by Aether - Cinematic Global Styles - v4.2 */
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Updated to Aether Blue (#089FEF) and cinematic dark theme */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 10%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 10%;
+  --primary: 199 98% 48%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 10%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 45%;
+  --accent: 0 0% 96%;
+  --accent-foreground: 0 0% 10%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 199 98% 48%;
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 1rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  /* Updated foreground colors for better visibility on dark backgrounds */
+  --background: 0 0% 0%;
+  --foreground: 0 0% 100%;
+  --card: 0 0% 5.5%;
+  --card-foreground: 0 0% 100%;
+  --popover: 0 0% 5.5%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 199 98% 48%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 5.5%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 0 0% 10%;
+  --muted-foreground: 0 0% 70.5%;
+  --accent: 0 0% 5.5%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 100% / 0.08;
+  --input: 0 0% 100% / 0.06;
+  --ring: 199 98% 48%;
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: oklch(0.439 0 0);
+}
+
+@theme inline {
+  --font-sans: "Inter", "Inter Fallback";
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-aether-blue: 199 98% 48%;
+  --color-aether-blue-glow: 199 98% 48% / 0.4;
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    background: linear-gradient(180deg, #000000 0%, #020a12 100%);
+    min-height: 100vh;
+    /* Ensure all text is white by default on dark background */
+    color: #ffffff;
+    /* Added smooth scroll behavior */
+    scroll-behavior: smooth;
+  }
+
+  /* Global text color overrides for dark theme */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    color: #ffffff;
+  }
+
+  p,
+  span,
+  div {
+    color: inherit;
+  }
+
+  /* Input and form element text colors */
+  input,
+  textarea,
+  select {
+    color: #ffffff;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  /* Label text color */
+  label {
+    color: #ffffff;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .glass {
+    background: rgba(14, 14, 14, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .glass-border {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .aether-glow {
+    box-shadow: 0 0 20px rgba(8, 159, 239, 0.3);
+  }
+
+  .aether-glow-sm {
+    box-shadow: 0 0 10px rgba(8, 159, 239, 0.2);
+  }
+
+  .text-aether {
+    color: #089fef;
+  }
+
+  .bg-aether {
+    background-color: #089fef;
+  }
+
+  .border-aether {
+    border-color: rgba(8, 159, 239, 0.4);
+  }
+
+  /* Added text color utilities for consistency */
+  .text-white-primary {
+    color: #ffffff;
+  }
+
+  .text-white-secondary {
+    color: #b4b4b4;
+  }
+
+  /* Added fade-in-up animation utility */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
+    opacity: 0;
+  }
+
+  /* Added animation delay utilities */
+  .animation-delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animation-delay-300 {
+    animation-delay: 300ms;
+  }
+
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+
+  .animation-delay-500 {
+    animation-delay: 500ms;
+  }
+
+  /* Added new animation utilities for demo chat */
+  .animate-breathing-glow {
+    animation: breathingGlow 4s ease-in-out infinite;
+  }
+
+  .animate-phone-scale-in {
+    animation: phoneScaleIn 0.8s cubic-bezier(0.4, 0, 2, 1) forwards;
+  }
+
+  .animate-message-slide-in {
+    animation: messageSlideIn 0.3s cubic-bezier(0.4, 0, 2, 1) forwards;
+    opacity: 0;
+  }
+
+  .animate-typing-dot {
+    animation: typingDot 1.4s ease-in-out infinite;
+  }
+
+  .animate-typewriter {
+    animation: typewriter 2s steps(20) 0.5s forwards;
+  }
+
+  /* Replaced blanket white text rule with role-specific rules for proper contrast */
+  /* Global safeguard for chat messages - prevent any overrides */
+  .chat-message,
+  .chat-message span {
+    opacity: 1 !important;
+    mix-blend-mode: normal !important;
+    filter: none !important;
+  }
+
+  /* Role-specific color enforcement */
+  .chat-message[data-role="assistant"],
+  .chat-message[data-role="assistant"] span {
+    color: #000000 !important;
+    background-color: #e5e5ea !important;
+  }
+
+  .chat-message[data-role="user"],
+  .chat-message[data-role="user"] span {
+    color: #ffffff !important;
+    background-color: #089fef !important;
+  }
+
+  /* Ensure chat window has proper isolation and white background */
+  .chat-window {
+    isolation: isolate !important;
+    background-color: #ffffff !important;
+    filter: none !important;
+  }
+
+  /* Prevent any parent opacity or blend mode from affecting messages */
+  .chat-window * {
+    filter: none !important;
+  }
+
+  /* Ensure chat window has proper isolation */
+  .chat-window {
+    isolation: isolate !important;
+  }
+
+  /* Added chat message text color safeguard to prevent Tailwind overrides */
+  .chat-message p,
+  .chat-message div {
+    color: #ffffff !important;
+    opacity: 1 !important;
+  }
+
+  /* Add aggressive chat message text safeguards to prevent any opacity/blend overrides */
+  .chat-window,
+  .chat-message,
+  .chat-message span {
+    color: inherit !important;
+    mix-blend-mode: normal !important;
+    opacity: 1 !important;
+  }
+
+  /* Added dark mode override for chat window */
+  [data-theme="dark"] .chat-window {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Prevent any global filters from affecting chat messages */
+  .chat-window * {
+    filter: none !important;
+  }
+
+  /* Add aggressive chat message text safeguards to prevent any opacity/blend overrides */
+  .chat-message,
+  .chat-message * {
+    color: #ffffff !important;
+    opacity: 1 !important;
+    mix-blend-mode: normal !important;
+  }
+
+  .chat-message span {
+    color: #ffffff !important;
+    opacity: 1 !important;
+  }
+
+  /* Prevent Radix scroll area from inheriting problematic styles */
+  [data-radix-scroll-area-viewport] .chat-message,
+  [data-radix-scroll-area-viewport] .chat-message * {
+    color: #ffffff !important;
+    opacity: 1 !important;
+    mix-blend-mode: normal !important;
+  }
+}
+
+@layer components {
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-in-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+/* Added new animations for wave effect and staggered card entrance */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Updated fadeInUp animation for smoother message entrance */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeUpStagger {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes wave {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateY(-20px) scale(1.05);
+    opacity: 0.25;
+  }
+}
+
+/* Added new keyframe animations for boot-up sequence and micro-interactions */
+@keyframes breathingGlow {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@keyframes phoneScaleIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes messageSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes typingDot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes typewriter {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* Mobile optimization styles */
+@media (max-width: 640px) {
+  h1 {
+    font-size: 2.25rem !important; /* 36px */
+    line-height: 1.2 !important;
+  }
+
+  p.text-lg,
+  p.text-xl {
+    font-size: 1rem !important; /* 16px */
+  }
+
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Stack hero content with proper spacing */
+  .space-y-8 {
+    gap: 5rem; /* 80px */
+  }
+
+  /* Full width buttons on mobile */
+  button,
+  a[role="button"] {
+    width: 100%;
+    border-radius: 0.75rem; /* 12px */
+  }
+}
