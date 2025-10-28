@@ -30,6 +30,12 @@ export async function POST(req: Request) {
   const supabase = await createServerClient()
 
   try {
+    await supabase.from("stripe_webhook_logs").insert({
+      event_type: event.type,
+      event_data: event,
+      processed: false,
+    })
+
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object as Stripe.Checkout.Session
@@ -178,6 +184,12 @@ export async function POST(req: Request) {
       default:
         console.log("[v0] Unhandled event type:", event.type)
     }
+
+    await supabase
+      .from("stripe_webhook_logs")
+      .update({ processed: true })
+      .eq("event_type", event.type)
+      .eq("event_data", event)
 
     return NextResponse.json({ received: true })
   } catch (err: any) {

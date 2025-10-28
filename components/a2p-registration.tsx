@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CheckCircle, Loader2 } from "lucide-react"
+import { CheckCircle, Loader2, Phone, Building2, FileText } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { createClient } from "@/lib/supabase/client"
 
@@ -195,17 +195,22 @@ export default function A2PRegistration({ userId }: A2PRegistrationProps) {
   }
 
   const steps = [
-    { number: 1, title: "Register Brand", status: registration?.brand_id ? "complete" : "pending" },
-    { number: 2, title: "Register Campaign", status: registration?.campaign_id ? "complete" : "pending" },
-    { number: 3, title: "Buy Number", status: registration?.phone_number ? "complete" : "pending" },
+    { number: 1, title: "Register Brand", status: registration?.brand_id ? "complete" : "pending", icon: Building2 },
+    {
+      number: 2,
+      title: "Register Campaign",
+      status: registration?.campaign_id ? "complete" : "pending",
+      icon: FileText,
+    },
+    { number: 3, title: "Buy Number", status: registration?.phone_number ? "complete" : "pending", icon: Phone },
   ]
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-white mb-2">A2P 10DLC Registration</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">Automated A2P Setup</h2>
         <p className="text-white-secondary">
-          Complete A2P registration to send compliant SMS campaigns with your own verified brand and phone number.
+          Your Twilio subaccount will be created automatically. Complete these steps to start sending compliant SMS.
         </p>
       </div>
 
@@ -224,7 +229,7 @@ export default function A2PRegistration({ userId }: A2PRegistrationProps) {
                 }`}
               >
                 {step.status === "complete" ? (
-                  <CheckCircle className="h-5 w-5 text-green-400" />
+                  <step.icon className="h-5 w-5 text-green-400" />
                 ) : (
                   <span className="text-sm font-semibold text-white">{step.number}</span>
                 )}
@@ -455,12 +460,16 @@ export default function A2PRegistration({ userId }: A2PRegistrationProps) {
           <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20 mb-6">
             <CheckCircle className="h-6 w-6 text-green-400" />
             <div>
-              <p className="text-green-400 font-semibold text-lg">A2P Registration Complete!</p>
-              <p className="text-sm text-white-secondary">You're ready to send compliant SMS campaigns</p>
+              <p className="text-green-400 font-semibold text-lg">Setup Complete!</p>
+              <p className="text-sm text-white-secondary">Your subaccount is ready for compliant SMS campaigns</p>
             </div>
           </div>
 
           <div className="space-y-3">
+            <div className="flex justify-between items-center p-3 rounded-lg bg-white/5">
+              <span className="text-white-secondary">Subaccount SID</span>
+              <span className="text-white font-mono text-sm">{registration.subaccount_sid}</span>
+            </div>
             <div className="flex justify-between items-center p-3 rounded-lg bg-white/5">
               <span className="text-white-secondary">Company Name</span>
               <span className="text-white font-medium">{registration.company_name}</span>
@@ -477,6 +486,14 @@ export default function A2PRegistration({ userId }: A2PRegistrationProps) {
               <span className="text-white-secondary">Phone Number</span>
               <span className="text-white font-medium">{registration.phone_number}</span>
             </div>
+          </div>
+
+          <div className="mt-6 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+            <p className="text-sm text-blue-400 font-medium mb-1">Billing Information</p>
+            <p className="text-xs text-white-secondary">
+              All billing is routed through the master RE:VIVE account. Your usage is tracked per subaccount for
+              accurate Stripe billing.
+            </p>
           </div>
         </div>
       )}

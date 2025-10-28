@@ -33,7 +33,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // Check if user has enough credits for all contacts
     if (billing.credits_remaining < contacts.length) {
       return NextResponse.json(
         {
@@ -54,12 +53,15 @@ export async function POST(request: Request) {
 
     let twilioAccount: any
     let fromNumber: string
+    let subaccountSid: string | null = null
 
     if (a2pReg && a2pReg.twilio_accounts) {
       twilioAccount = a2pReg.twilio_accounts
       fromNumber = a2pReg.phone_number
-      console.log("[v0] Using A2P subaccount for sending")
+      subaccountSid = a2pReg.subaccount_sid
+      console.log("[v0] Using A2P subaccount for sending:", subaccountSid)
     } else {
+      // Fallback to legacy Twilio account
       const { data: campaign, error: campaignError } = await supabase
         .from("sms_campaigns")
         .select("*, twilio_accounts!inner(*)")
@@ -124,6 +126,15 @@ export async function POST(request: Request) {
           await supabase.rpc("deduct_sms_credit", {
             p_user_id: user.id,
           })
+
+          if (subaccountSid) {
+            await supabase.rpc("log_subaccount_usage", {
+              p_user_id: user.id,
+              p_subaccount_sid: subaccountSid,
+              p_campaign_id: campaignId,
+              p_credits_used: 1,
+            })
+          }
 
           results.push({ phoneNumber: contact.phone_number, success: true, sid: data.sid })
         } else {

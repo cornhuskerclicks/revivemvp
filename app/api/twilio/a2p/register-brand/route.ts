@@ -16,33 +16,35 @@ export async function POST(req: NextRequest) {
 
     const { company_name, ein, vertical, contact_name, contact_email } = await req.json()
 
-    // Validate required fields
     if (!company_name || !ein || !vertical || !contact_name || !contact_email) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+      return NextResponse.json(
+        {
+          error: "Missing required fields",
+          required: ["company_name", "ein", "vertical", "contact_name", "contact_email"],
+        },
+        { status: 400 },
+      )
     }
 
-    // Create Twilio subaccount
-    const subaccountResponse = await fetch("https://api.twilio.com/2010-04-01/Accounts.json", {
-      method: "POST",
-      headers: {
-        Authorization:
-          "Basic " +
-          Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString("base64"),
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({
-        FriendlyName: `${company_name} Subaccount`,
-      }),
-    })
+    let { data: twilioAccount } = await supabase.from("twilio_accounts").select("*").eq("user_id", user.id).single()
 
-    if (!subaccountResponse.ok) {
-      const error = await subaccountResponse.text()
-      throw new Error(`Failed to create subaccount: ${error}`)
+    if (!twilioAccount) {
+      // Create subaccount if it doesn't exist
+      const createResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/twilio/subaccount/create`, {
+        method: "POST",
+        headers: {
+          Cookie: req.headers.get("cookie") || "",
+        },
+      })
+
+      if (!createResponse.ok) {
+        throw new Error("Failed to create Twilio subaccount")
+      }
+
+      const createData = await createResponse.json()
+      twilioAccount = createData.account
     }
 
-    const subaccount = await subaccountResponse.json()
-
-    // Register A2P brand via Twilio Messaging API
     const brandResponse = await fetch("https://messaging.twilio.com/v1/a2p/BrandRegistrations", {
       method: "POST",
       headers: {
@@ -52,7 +54,7 @@ export async function POST(req: NextRequest) {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams({
-        CustomerProfileBundleSid: "auto", // Twilio will auto-create
+        CustomerProfileBundleSid: "auto",
         A2PProfileBundleSid: "auto",
         BrandType: "STANDARD",
         CompanyName: company_name,
@@ -66,17 +68,15 @@ export async function POST(req: NextRequest) {
 
     if (!brandResponse.ok) {
       const error = await brandResponse.text()
+      console.error("[v0] Brand registration failed:", error)
       throw new Error(`Failed to register brand: ${error}`)
     }
 
     const brand = await brandResponse.json()
 
-    // Store in database
     const { data: registration, error: dbError } = await supabase
       .from("a2p_registrations")
-      .insert({
-        user_id: user.id,
-        subaccount_sid: subaccount.sid,
+      .update({
         brand_id: brand.sid,
         status: "brand_registered",
         company_name,
@@ -85,24 +85,18 @@ export async function POST(req: NextRequest) {
         contact_name,
         contact_email,
       })
+      .eq("user_id", user.id)
       .select()
       .single()
 
     if (dbError) {
+      console.error("[v0] Database error:", dbError)
       throw new Error(`Database error: ${dbError.message}`)
     }
 
-    // Store Twilio account credentials
-    await supabase.from("twilio_accounts").insert({
-      user_id: user.id,
-      account_sid: subaccount.sid,
-      auth_token: subaccount.auth_token,
-      subaccount_sid: subaccount.sid,
-    })
-
     return NextResponse.json({
       success: true,
-      subaccount_sid: subaccount.sid,
+      subaccount_sid: twilioAccount.subaccount_sid,
       brand_id: brand.sid,
       registration,
     })

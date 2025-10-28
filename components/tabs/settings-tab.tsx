@@ -6,7 +6,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { CheckCircle, AlertCircle, Loader2, Send, CreditCard, TrendingUp } from "lucide-react"
+import { CheckCircle, AlertCircle, Loader2, Send, CreditCard, TrendingUp, Phone } from "lucide-react"
 import { useRouter } from "next/navigation"
 import A2PRegistration from "@/components/a2p-registration"
 import { createClient } from "@/lib/supabase/client"
@@ -38,10 +38,35 @@ export default function SettingsTab({ twilioAccount, userId }: SettingsTabProps)
   const [isLoadingBilling, setIsLoadingBilling] = useState(true)
   const [isUpgrading, setIsUpgrading] = useState(false)
 
+  const [a2pStatus, setA2pStatus] = useState<any>(null)
+  const [isLoadingA2P, setIsLoadingA2P] = useState(true)
+
   useEffect(() => {
     fetchBillingData()
     fetchPlans()
+    fetchA2PStatus()
   }, [])
+
+  const fetchA2PStatus = async () => {
+    try {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("a2p_registrations")
+        .select("*, twilio_accounts(*)")
+        .eq("user_id", userId)
+        .single()
+
+      if (error && error.code !== "PGRST116") {
+        console.error("[v0] Error fetching A2P status:", error)
+      }
+
+      setA2pStatus(data)
+    } catch (err) {
+      console.error("[v0] Error fetching A2P status:", err)
+    } finally {
+      setIsLoadingA2P(false)
+    }
+  }
 
   const fetchBillingData = async () => {
     try {
@@ -319,9 +344,92 @@ export default function SettingsTab({ twilioAccount, userId }: SettingsTabProps)
         </div>
       </div>
 
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Phone className="h-6 w-6 text-aether" />
+          <h2 className="text-2xl font-bold text-white">SMS Connection</h2>
+        </div>
+        <p className="text-white-secondary mb-6">
+          Your Twilio subaccount is automatically created and managed for compliant A2P messaging
+        </p>
+
+        {isLoadingA2P ? (
+          <div className="p-6 rounded-xl glass glass-border flex items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-aether" />
+          </div>
+        ) : a2pStatus ? (
+          <div className="p-6 rounded-xl glass glass-border">
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20 mb-4">
+              <CheckCircle className="h-5 w-5 text-green-400" />
+              <div>
+                <p className="text-green-400 font-semibold">Automated Connection Active</p>
+                <p className="text-sm text-white-secondary">Your Twilio subaccount is ready for SMS campaigns</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex justify-between items-center p-3 rounded-lg bg-white/5">
+                <span className="text-white-secondary">Status</span>
+                <span className="text-white font-medium capitalize">{a2pStatus.status.replace("_", " ")}</span>
+              </div>
+              {a2pStatus.subaccount_sid && (
+                <div className="flex justify-between items-center p-3 rounded-lg bg-white/5">
+                  <span className="text-white-secondary">Subaccount SID</span>
+                  <span className="text-white font-mono text-sm">{a2pStatus.subaccount_sid}</span>
+                </div>
+              )}
+              {a2pStatus.brand_id && (
+                <div className="flex justify-between items-center p-3 rounded-lg bg-white/5">
+                  <span className="text-white-secondary">Brand Registered</span>
+                  <CheckCircle className="h-5 w-5 text-green-400" />
+                </div>
+              )}
+              {a2pStatus.campaign_id && (
+                <div className="flex justify-between items-center p-3 rounded-lg bg-white/5">
+                  <span className="text-white-secondary">Campaign Registered</span>
+                  <CheckCircle className="h-5 w-5 text-green-400" />
+                </div>
+              )}
+              {a2pStatus.phone_number && (
+                <div className="flex justify-between items-center p-3 rounded-lg bg-white/5">
+                  <span className="text-white-secondary">Phone Number</span>
+                  <span className="text-white font-medium">{a2pStatus.phone_number}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-4 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <p className="text-sm text-blue-400 font-medium mb-1">ISV Model Active</p>
+              <p className="text-xs text-white-secondary">
+                All billing is routed through RE:VIVE's master account. Your usage is tracked per subaccount for
+                accurate billing.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="p-6 rounded-xl glass glass-border">
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 mb-4">
+              <AlertCircle className="h-5 w-5 text-yellow-400" />
+              <div>
+                <p className="text-yellow-400 font-semibold">No SMS Connection</p>
+                <p className="text-sm text-white-secondary">Complete A2P registration below to start sending SMS</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
       <A2PRegistration userId={userId} />
 
       <div className="border-t border-white/10 pt-8">
+        <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20 mb-6">
+          <p className="text-yellow-400 font-semibold mb-1">Legacy Connection (Deprecated)</p>
+          <p className="text-sm text-white-secondary">
+            Manual Twilio connection is deprecated. New users should use the automated A2P registration above for
+            compliant messaging.
+          </p>
+        </div>
+
         <div>
           <h2 className="text-2xl font-bold text-white mb-2">Twilio Connection (Legacy)</h2>
           <p className="text-white-secondary">
