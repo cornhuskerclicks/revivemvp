@@ -96,14 +96,14 @@ export default function DemoTab({ androids }: DemoTabProps) {
       <div className="p-6 rounded-xl glass glass-border bg-gradient-to-br from-purple-500/5 to-transparent border-purple-500/20">
         <h3 className="text-lg font-semibold text-white mb-2">Ready to send real messages?</h3>
         <p className="text-white-secondary mb-4">
-          Connect your Twilio account and launch your first campaign to start reactivating leads.
+          Complete A2P registration and launch your first campaign to start reactivating leads.
         </p>
         <Button
           variant="outline"
           asChild
           className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10 bg-transparent"
         >
-          <Link href="/dashboard?tab=settings">Connect Twilio</Link>
+          <Link href="/dashboard?tab=settings">Setup SMS</Link>
         </Button>
       </div>
     </div>

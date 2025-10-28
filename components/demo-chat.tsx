@@ -395,7 +395,7 @@ export default function DemoChat({ android, userId, isSandboxMode = false }: Dem
                     <h3 className="font-semibold text-gray-900">Ready to send real messages?</h3>
                   </div>
                   <p className="text-sm text-gray-700 mb-3">
-                    Connect your Twilio account and launch your first campaign to start reactivating leads.
+                    Complete A2P registration and launch your first campaign to start reactivating leads.
                   </p>
                   <Button
                     asChild

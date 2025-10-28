@@ -75,8 +75,8 @@ export default function HomePage() {
           </h1>
 
           <p className="text-lg md:text-xl text-[#B4B4B4] text-balance max-w-2xl mx-auto leading-relaxed relative z-10">
-            RE:VIVE is a self-service SaaS platform that connects to Twilio, uploads leads, and sends automated 3-part
-            SMS sequences—powered by <span className="text-aether font-semibold">Aether AI</span>.
+            RE:VIVE is a self-service SaaS platform with managed SMS infrastructure that uploads leads and sends
+            automated 3-part SMS sequences—powered by <span className="text-aether font-semibold">Aether AI</span>.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8 relative z-10">
@@ -111,7 +111,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-2xl font-bold mb-4 uppercase text-white">SMS Campaigns</h3>
               <p className="text-[#B4B4B4] leading-relaxed">
-                Upload leads via CSV and launch automated 3-part message sequences with Twilio integration.
+                Upload leads via CSV and launch automated 3-part message sequences with managed SMS infrastructure.
               </p>
             </div>
 

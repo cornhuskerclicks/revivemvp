@@ -20,8 +20,6 @@ export default function CampaignsTab({ campaigns }: CampaignsTabProps) {
     switch (status) {
       case "active":
         return "bg-green-500/10 text-green-400 border-green-500/20"
-      case "draft":
-        return "bg-gray-500/10 text-gray-400 border-gray-500/20"
       case "paused":
         return "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
       case "completed":
@@ -66,7 +64,7 @@ export default function CampaignsTab({ campaigns }: CampaignsTabProps) {
     } catch (error) {
       toast({
         title: "Error starting campaign",
-        description: "Please try again or check your Twilio connection.",
+        description: "Please try again or complete A2P registration in Settings.",
         variant: "destructive",
       })
     } finally {
