@@ -1,9 +1,11 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Plus, Play, Pause, CheckCircle, Megaphone } from "lucide-react"
+import { Plus, Play, Pause, CheckCircle, Megaphone, Eye } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
+import { useToast } from "@/hooks/use-toast"
+import { useState } from "react"
 
 interface CampaignsTabProps {
   campaigns: any[]
@@ -11,6 +13,9 @@ interface CampaignsTabProps {
 }
 
 export default function CampaignsTab({ campaigns }: CampaignsTabProps) {
+  const { toast } = useToast()
+  const [loadingCampaigns, setLoadingCampaigns] = useState<Record<string, boolean>>({})
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
@@ -36,6 +41,65 @@ export default function CampaignsTab({ campaigns }: CampaignsTabProps) {
         return <CheckCircle className="h-3 w-3" />
       default:
         return null
+    }
+  }
+
+  const handleStartCampaign = async (campaignId: string) => {
+    setLoadingCampaigns((prev) => ({ ...prev, [campaignId]: true }))
+
+    try {
+      const response = await fetch(`/api/campaigns/${campaignId}/start`, {
+        method: "POST",
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to start campaign")
+      }
+
+      toast({
+        title: "Campaign started successfully",
+        description: "Messages are being sent to your leads.",
+      })
+
+      // Refresh the page to show updated status
+      window.location.reload()
+    } catch (error) {
+      toast({
+        title: "Error starting campaign",
+        description: "Please try again or check your Twilio connection.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoadingCampaigns((prev) => ({ ...prev, [campaignId]: false }))
+    }
+  }
+
+  const handlePauseCampaign = async (campaignId: string) => {
+    setLoadingCampaigns((prev) => ({ ...prev, [campaignId]: true }))
+
+    try {
+      const response = await fetch(`/api/campaigns/${campaignId}/pause`, {
+        method: "POST",
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to pause campaign")
+      }
+
+      toast({
+        title: "Campaign paused",
+        description: "No more messages will be sent until you resume.",
+      })
+
+      window.location.reload()
+    } catch (error) {
+      toast({
+        title: "Error pausing campaign",
+        description: "Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoadingCampaigns((prev) => ({ ...prev, [campaignId]: false }))
     }
   }
 
@@ -105,14 +169,52 @@ export default function CampaignsTab({ campaigns }: CampaignsTabProps) {
                     {new Date(campaign.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-aether hover:text-aether/80 hover:bg-aether/10"
-                      asChild
-                    >
-                      <Link href={`/campaigns/${campaign.id}`}>View</Link>
-                    </Button>
+                    <div className="flex items-center justify-end gap-2">
+                      {campaign.status === "draft" && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleStartCampaign(campaign.id)}
+                          disabled={loadingCampaigns[campaign.id]}
+                          className="bg-green-500 text-white hover:bg-green-600"
+                        >
+                          <Play className="h-3 w-3 mr-1" />
+                          Start
+                        </Button>
+                      )}
+                      {campaign.status === "active" && (
+                        <Button
+                          size="sm"
+                          onClick={() => handlePauseCampaign(campaign.id)}
+                          disabled={loadingCampaigns[campaign.id]}
+                          className="bg-yellow-500 text-white hover:bg-yellow-600"
+                        >
+                          <Pause className="h-3 w-3 mr-1" />
+                          Pause
+                        </Button>
+                      )}
+                      {campaign.status === "paused" && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleStartCampaign(campaign.id)}
+                          disabled={loadingCampaigns[campaign.id]}
+                          className="bg-green-500 text-white hover:bg-green-600"
+                        >
+                          <Play className="h-3 w-3 mr-1" />
+                          Resume
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-aether hover:text-aether/80 hover:bg-aether/10"
+                        asChild
+                      >
+                        <Link href={`/campaigns/${campaign.id}`}>
+                          <Eye className="h-3 w-3 mr-1" />
+                          View
+                        </Link>
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import CampaignSetupStep from "@/components/wizard-steps/campaign-setup-step"
 import LeadsUploadStep from "@/components/wizard-steps/leads-upload-step"
 import MessageSequenceStep from "@/components/wizard-steps/message-sequence-step"
+import { useToast } from "@/hooks/use-toast"
 
 interface CampaignWizardProps {
   userId: string
@@ -15,6 +16,7 @@ interface CampaignWizardProps {
 
 export default function CampaignWizard({ userId, twilioAccount }: CampaignWizardProps) {
   const router = useRouter()
+  const { toast } = useToast()
   const [currentStep, setCurrentStep] = useState(1)
   const [campaignData, setCampaignData] = useState({
     name: "",
@@ -57,9 +59,19 @@ export default function CampaignWizard({ userId, twilioAccount }: CampaignWizard
         throw new Error("Failed to create campaign")
       }
 
+      toast({
+        title: "Campaign created successfully",
+        description: "Your campaign is ready to launch.",
+      })
+
       router.push("/dashboard?tab=campaigns")
     } catch (error) {
       console.error("[v0] Error creating campaign:", error)
+      toast({
+        title: "Error creating campaign",
+        description: "Please check your inputs and try again.",
+        variant: "destructive",
+      })
     }
   }
 
