@@ -11,9 +11,10 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "RE:VIVE by Aether",
-  description: "Revive Conversations. Reignite Leads. Built with Aether AI.",
-    generator: 'v0.app'
+  title: "RE:VIVE by Aether - AI-Powered Lead Reactivation",
+  description:
+    "SaaS platform for AI-powered SMS campaigns. Reactivate leads, automate follow-ups, and track replies with Twilio integration.",
+  generator: "v0.app",
 }
 
 export default function RootLayout({

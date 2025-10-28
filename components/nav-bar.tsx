@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Library, LayoutDashboard, LogOut, User } from "lucide-react"
+import { LayoutDashboard, LogOut, User, Settings } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -54,17 +54,6 @@ export default function NavBar({ userEmail, userName }: NavBarProps) {
               Dashboard
             </Link>
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            asChild
-            className="hidden sm:flex text-white hover:text-aether hover:bg-white/5 transition-all duration-300 uppercase font-semibold text-xs tracking-wide"
-          >
-            <Link href="/library">
-              <Library className="h-4 w-4 mr-2" />
-              Library
-            </Link>
-          </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -89,13 +78,13 @@ export default function NavBar({ userEmail, userName }: NavBarProps) {
                   Dashboard
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild className="sm:hidden text-white hover:text-aether hover:bg-white/5">
-                <Link href="/library">
-                  <Library className="h-4 w-4 mr-2" />
-                  Library
+              <DropdownMenuItem asChild className="text-white hover:text-aether hover:bg-white/5">
+                <Link href="/dashboard?tab=settings">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuSeparator className="sm:hidden bg-white/10" />
+              <DropdownMenuSeparator className="bg-white/10" />
               <DropdownMenuItem onClick={handleSignOut} className="text-red-400 hover:text-red-300 hover:bg-red-500/10">
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign Out

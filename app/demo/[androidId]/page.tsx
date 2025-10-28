@@ -44,5 +44,5 @@ export default async function DemoPage({ params }: { params: Promise<{ androidId
     )
   }
 
-  return <DemoChat android={android} userId={data.user.id} />
+  return <DemoChat android={android} userId={data.user.id} isSandboxMode={true} />
 }

@@ -6,13 +6,15 @@ import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Send, RefreshCw, ArrowLeft } from "lucide-react"
+import { Send, RefreshCw, ArrowLeft, Sparkles, Megaphone } from "lucide-react"
 import { useRouter } from "next/navigation"
 import type { Android } from "@/lib/types"
+import Link from "next/link"
 
 interface DemoChatProps {
   android: Android
   userId: string
+  isSandboxMode?: boolean // Added prop to indicate sandbox mode
 }
 
 function normalizeMessageText(message: any): string {
@@ -81,7 +83,7 @@ const userBubble = {
   fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
 }
 
-export default function DemoChat({ android, userId }: DemoChatProps) {
+export default function DemoChat({ android, userId, isSandboxMode = false }: DemoChatProps) {
   const router = useRouter()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [input, setInput] = useState("")
@@ -91,6 +93,7 @@ export default function DemoChat({ android, userId }: DemoChatProps) {
   const [showFirstMessage, setShowFirstMessage] = useState(false)
   const [showTypingForFirst, setShowTypingForFirst] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [showCTA, setShowCTA] = useState(false)
 
   const companyName = android.business_context?.company_name || android.business_context?.businessName || "My Business"
   const niche = android.business_context?.niche || android.business_context?.industry || "services"
@@ -104,6 +107,12 @@ export default function DemoChat({ android, userId }: DemoChatProps) {
   })
 
   const isLoading = status === "in_progress"
+
+  useEffect(() => {
+    if (isSandboxMode && messages.length >= 3) {
+      setShowCTA(true)
+    }
+  }, [messages.length, isSandboxMode])
 
   useEffect(() => {
     const isMobile = window.innerWidth < 768
@@ -204,7 +213,7 @@ export default function DemoChat({ android, userId }: DemoChatProps) {
             </h1>
           </div>
           <p className="mt-6 text-white/70 text-lg animate-typewriter overflow-hidden whitespace-nowrap border-r-2 border-aether">
-            Initializing Android...
+            {isSandboxMode ? "Loading AI Sandbox..." : "Initializing Android..."}
           </p>
           <div className="flex gap-2 mt-4">
             <div className="w-2 h-2 rounded-full bg-aether animate-pulse" style={{ animationDelay: "0ms" }} />
@@ -247,7 +256,14 @@ export default function DemoChat({ android, userId }: DemoChatProps) {
                 borderBottom: `1px solid ${isDarkMode ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}`,
               }}
             >
-              ☕ Coffee Date Demo Mode — powered by Aether AI
+              {isSandboxMode ? (
+                <span className="flex items-center justify-center gap-1">
+                  <Sparkles className="h-3 w-3 inline" />
+                  AI Sandbox Mode — Test prompts without sending real SMS
+                </span>
+              ) : (
+                "Coffee Date Demo Mode — powered by Aether AI"
+              )}
             </div>
 
             <header
@@ -277,7 +293,7 @@ export default function DemoChat({ android, userId }: DemoChatProps) {
                       {android.name} — {companyName}
                     </h1>
                     <p className="text-xs" style={{ color: isDarkMode ? "#999999" : "#666666" }}>
-                      Coffee Date Demo
+                      {isSandboxMode ? "AI Sandbox" : "Coffee Date Demo"}
                     </p>
                   </div>
                 </div>
@@ -371,6 +387,26 @@ export default function DemoChat({ android, userId }: DemoChatProps) {
               })}
 
               {isLoading && <TypingIndicator />}
+
+              {showCTA && isSandboxMode && (
+                <div className="animate-fade-in-up mt-6 p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-aether/10 border border-purple-500/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Megaphone className="h-5 w-5 text-aether" />
+                    <h3 className="font-semibold text-gray-900">Ready to send real messages?</h3>
+                  </div>
+                  <p className="text-sm text-gray-700 mb-3">
+                    Connect your Twilio account and launch your first campaign to start reactivating leads.
+                  </p>
+                  <Button
+                    asChild
+                    size="sm"
+                    className="bg-gradient-to-r from-aether to-purple-500 text-white hover:shadow-lg w-full"
+                  >
+                    <Link href="/dashboard?tab=campaigns">Launch Your First Campaign</Link>
+                  </Button>
+                </div>
+              )}
+
               <div ref={messagesEndRef} />
             </div>
 
@@ -410,7 +446,9 @@ export default function DemoChat({ android, userId }: DemoChatProps) {
                 </Button>
               </form>
               <p className="text-[10px] text-center" style={{ color: isDarkMode ? "#666666" : "#999999" }}>
-                Powered by RE:VIVE Chat System • Built with Aether AI
+                {isSandboxMode
+                  ? "AI Sandbox • Test mode only • No real SMS sent"
+                  : "Powered by RE:VIVE Chat System • Built with Aether AI"}
               </p>
             </div>
           </div>

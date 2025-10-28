@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Sparkles, MessageSquare, Presentation } from "lucide-react"
+import { Sparkles, MessageSquare, Megaphone } from "lucide-react"
 import Image from "next/image"
 
 export default function HomePage() {
@@ -12,7 +12,6 @@ export default function HomePage() {
           className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-aether opacity-[0.25] rounded-full blur-3xl animate-pulse-slow"
           style={{ animationDelay: "1.5s" }}
         />
-        {/* Particle wave animation */}
         <div
           className="absolute inset-0 opacity-20"
           style={{
@@ -55,7 +54,6 @@ export default function HomePage() {
         </nav>
 
         <div className="max-w-5xl mx-auto text-center space-y-8 py-20 animate-fade-in relative">
-          {/* Radial glow behind hero CTA section */}
           <div
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] pointer-events-none"
             style={{
@@ -65,20 +63,20 @@ export default function HomePage() {
           />
 
           <div className="inline-block px-6 py-3 rounded-full glass glass-border mb-6 aether-glow-sm relative z-10">
-            <span className="text-aether text-sm font-semibold uppercase tracking-wide">Built with Aether AI</span>
+            <span className="text-aether text-sm font-semibold uppercase tracking-wide">AI-Powered SMS Campaigns</span>
           </div>
 
           <h1 className="text-7xl md:text-8xl font-extrabold tracking-tight text-balance leading-[1.1] relative z-10">
-            Revive Conversations.
+            Reactivate Leads.
             <br />
             <span className="text-aether animate-pulse-slow" style={{ textShadow: "0 0 35px rgba(8,159,239,0.5)" }}>
-              Reignite Leads.
+              Automate Follow-Ups.
             </span>
           </h1>
 
           <p className="text-lg md:text-xl text-[#B4B4B4] text-balance max-w-2xl mx-auto leading-relaxed relative z-10">
-            Generate custom AI personas that open conversations, qualify interest, and move leads forward—all within the
-            <span className="text-aether font-semibold"> Revival Chat™ System</span>.
+            RE:VIVE is a self-service SaaS platform that connects to Twilio, uploads leads, and sends automated 3-part
+            SMS sequences—powered by <span className="text-aether font-semibold">Aether AI</span>.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8 relative z-10">
@@ -87,7 +85,7 @@ export default function HomePage() {
               asChild
               className="bg-gradient-to-r from-aether to-[#007ACC] text-white hover:shadow-xl hover:shadow-aether/50 transition-all duration-300 hover:scale-[1.03] px-10 py-6 text-base font-semibold uppercase"
             >
-              <Link href="/auth/sign-up">Start Building</Link>
+              <Link href="/auth/sign-up">Start Free Trial</Link>
             </Button>
             <Button
               size="lg"
@@ -109,11 +107,11 @@ export default function HomePage() {
               }}
             >
               <div className="h-14 w-14 rounded-xl bg-aether/10 flex items-center justify-center mb-6 group-hover:bg-aether/20 transition-all duration-300 group-hover:shadow-[0_0_25px_rgba(8,159,239,0.2)]">
-                <Sparkles className="h-7 w-7 text-aether" />
+                <Megaphone className="h-7 w-7 text-aether" />
               </div>
-              <h3 className="text-2xl font-bold mb-4 uppercase text-white">Prompt Generator</h3>
+              <h3 className="text-2xl font-bold mb-4 uppercase text-white">SMS Campaigns</h3>
               <p className="text-[#B4B4B4] leading-relaxed">
-                Answer simple questions about your business and instantly generate a complete Coffee Date prompt.
+                Upload leads via CSV and launch automated 3-part message sequences with Twilio integration.
               </p>
             </div>
 
@@ -129,9 +127,9 @@ export default function HomePage() {
               <div className="h-14 w-14 rounded-xl bg-aether/10 flex items-center justify-center mb-6 group-hover:bg-aether/20 transition-all duration-300 group-hover:shadow-[0_0_25px_rgba(8,159,239,0.2)]">
                 <MessageSquare className="h-7 w-7 text-aether" />
               </div>
-              <h3 className="text-2xl font-bold mb-4 uppercase text-white">Android Builder</h3>
+              <h3 className="text-2xl font-bold mb-4 uppercase text-white">Reply Tracking</h3>
               <p className="text-[#B4B4B4] leading-relaxed">
-                Activate your AI persona and run test conversations that behave like real SMS interactions.
+                Monitor incoming replies in real-time and track campaign performance with detailed analytics.
               </p>
             </div>
 
@@ -145,11 +143,11 @@ export default function HomePage() {
               }}
             >
               <div className="h-14 w-14 rounded-xl bg-aether/10 flex items-center justify-center mb-6 group-hover:bg-aether/20 transition-all duration-300 group-hover:shadow-[0_0_25px_rgba(8,159,239,0.2)]">
-                <Presentation className="h-7 w-7 text-aether" />
+                <Sparkles className="h-7 w-7 text-aether" />
               </div>
-              <h3 className="text-2xl font-bold mb-4 uppercase text-white">Demo Mode</h3>
+              <h3 className="text-2xl font-bold mb-4 uppercase text-white">AI Sandbox</h3>
               <p className="text-[#B4B4B4] leading-relaxed">
-                Present your AI demos to clients in a clean, distraction-free full-screen interface.
+                Test your Coffee Date prompts and simulate conversations before launching real campaigns.
               </p>
             </div>
           </div>
@@ -157,7 +155,7 @@ export default function HomePage() {
 
         <footer className="text-center py-16 mt-32 border-t border-white/[0.08]">
           <p className="text-[#999999] text-sm uppercase tracking-[1.5px]" style={{ fontVariantCaps: "small-caps" }}>
-            Powered by Aether Intelligence • Built on the Revival Chat™ System
+            Powered by Aether Intelligence • RE:VIVE SaaS Platform
           </p>
         </footer>
       </div>

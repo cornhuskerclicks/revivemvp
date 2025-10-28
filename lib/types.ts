@@ -62,3 +62,57 @@ export interface Message {
   content: string
   created_at: string
 }
+
+export interface TwilioAccount {
+  id: string
+  user_id: string
+  account_sid: string
+  auth_token: string
+  phone_number: string | null
+  is_verified: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface SMSCampaign {
+  id: string
+  user_id: string
+  name: string
+  status: "draft" | "active" | "paused" | "completed"
+  twilio_phone_number: string | null
+  batch_size: number
+  total_leads: number
+  sent: number
+  delivered: number
+  replies: number
+  failed: number
+  created_at: string
+  updated_at: string
+}
+
+export interface CampaignContact {
+  id: string
+  campaign_id: string
+  lead_name: string
+  phone_number: string
+  tags: string[]
+  status: "pending" | "sent" | "delivered" | "replied" | "failed"
+  last_message_at: string | null
+  created_at: string
+}
+
+export interface SMSMessage {
+  id: string
+  campaign_id: string
+  contact_id: string | null
+  message_body: string
+  message_type: string
+  sequence_number: number | null
+  direction: "inbound" | "outbound"
+  status: "pending" | "sent" | "delivered" | "failed" | "received"
+  twilio_sid: string | null
+  error_message: string | null
+  sent_at: string | null
+  delivered_at: string | null
+  created_at: string
+}
