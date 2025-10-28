@@ -24,6 +24,33 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       return NextResponse.json({ error: "Campaign not found" }, { status: 404 })
     }
 
+    const { data: contacts } = await supabase
+      .from("campaign_contacts")
+      .select("country_code")
+      .eq("campaign_id", params.id)
+      .limit(1)
+
+    const hasUSNumbers = contacts?.some((c) => c.country_code === "US" || !c.country_code)
+
+    if (hasUSNumbers) {
+      const { data: a2pReg } = await supabase
+        .from("a2p_registrations")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("status", "number_assigned")
+        .single()
+
+      if (!a2pReg) {
+        return NextResponse.json(
+          {
+            error: "A2P registration required for US numbers. Please complete setup in Settings.",
+            requires_a2p: true,
+          },
+          { status: 400 },
+        )
+      }
+    }
+
     const { error: updateError } = await supabase
       .from("sms_campaigns")
       .update({ status: "active" })
@@ -52,6 +79,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
         batch_size: campaign.drip_size,
         queued_contacts: queueResult,
         message_intervals: campaign.message_interval_days,
+        has_us_numbers: hasUSNumbers,
       },
     })
 

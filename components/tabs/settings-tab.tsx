@@ -348,7 +348,7 @@ export default function SettingsTab({ twilioAccount, userId }: SettingsTabProps)
           <h2 className="text-2xl font-bold text-white">SMS Connection</h2>
         </div>
         <p className="text-white-secondary mb-6">
-          Your Twilio subaccount is automatically created and managed by RE:VIVE for compliant A2P messaging
+          Your Twilio subaccount is automatically managed by RE:VIVE. A2P registration is only required for US numbers.
         </p>
 
         {isLoadingA2P ? (
@@ -394,6 +394,14 @@ export default function SettingsTab({ twilioAccount, userId }: SettingsTabProps)
                   <span className="text-white font-medium">{a2pStatus.phone_number}</span>
                 </div>
               )}
+              {a2pStatus.country_code && (
+                <div className="flex justify-between items-center p-3 rounded-lg bg-white/5">
+                  <span className="text-white-secondary">Country</span>
+                  <span className="text-white font-medium">
+                    {a2pStatus.country_code === "US" ? "🇺🇸 United States (A2P Compliant)" : `${a2pStatus.country_code}`}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="mt-4 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
@@ -409,7 +417,9 @@ export default function SettingsTab({ twilioAccount, userId }: SettingsTabProps)
               <AlertCircle className="h-5 w-5 text-yellow-400" />
               <div>
                 <p className="text-yellow-400 font-semibold">Setup Required</p>
-                <p className="text-sm text-white-secondary">Complete A2P registration below to activate SMS</p>
+                <p className="text-sm text-white-secondary">
+                  Purchase a phone number below. A2P registration is only required for US numbers.
+                </p>
               </div>
             </div>
           </div>

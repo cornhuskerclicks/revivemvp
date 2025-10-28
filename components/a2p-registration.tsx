@@ -38,6 +38,7 @@ export default function A2PRegistration({ userId }: A2PRegistrationProps) {
 
   // Step 3: Buy Number
   const [areaCode, setAreaCode] = useState("402")
+  const [countryCode, setCountryCode] = useState("US")
   const [isBuyingNumber, setIsBuyingNumber] = useState(false)
 
   useEffect(() => {
@@ -54,7 +55,6 @@ export default function A2PRegistration({ userId }: A2PRegistrationProps) {
 
       if (data) {
         setRegistration(data)
-        // Set current step based on status
         if (data.status === "number_assigned" || data.status === "active") {
           setCurrentStep(4)
         } else if (data.status === "campaign_registered") {
@@ -159,6 +159,7 @@ export default function A2PRegistration({ userId }: A2PRegistrationProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           area_code: areaCode,
+          country_code: countryCode,
         }),
       })
 
@@ -170,7 +171,7 @@ export default function A2PRegistration({ userId }: A2PRegistrationProps) {
 
       toast({
         title: "Number Purchased",
-        description: `Successfully purchased ${data.phone_number}`,
+        description: `Successfully purchased ${data.phone_number}${data.requires_a2p ? " (A2P compliant)" : ""}`,
       })
 
       setRegistration(data.registration)
@@ -208,9 +209,9 @@ export default function A2PRegistration({ userId }: A2PRegistrationProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-white mb-2">Automated A2P Setup</h2>
+        <h2 className="text-2xl font-bold text-white mb-2">SMS Setup</h2>
         <p className="text-white-secondary">
-          Your Twilio subaccount will be created automatically. Complete these steps to start sending compliant SMS.
+          Complete these steps to start sending SMS. A2P registration is only required for US numbers.
         </p>
       </div>
 
@@ -415,26 +416,52 @@ export default function A2PRegistration({ userId }: A2PRegistrationProps) {
         <div className="p-6 rounded-xl glass glass-border max-w-2xl">
           <h3 className="text-lg font-semibold text-white mb-4">Step 3: Buy Phone Number</h3>
           <p className="text-white-secondary mb-6">
-            Purchase a phone number to use for sending SMS messages in your campaigns.
+            Purchase a phone number to use for sending SMS messages. Choose your country and area code.
           </p>
 
           <form onSubmit={handleBuyNumber} className="space-y-4">
             <div>
-              <Label htmlFor="areaCode" className="text-white">
-                Area Code
+              <Label htmlFor="countryCode" className="text-white">
+                Country
               </Label>
-              <Input
-                id="areaCode"
-                type="text"
-                placeholder="402"
-                value={areaCode}
-                onChange={(e) => setAreaCode(e.target.value)}
-                required
-                maxLength={3}
-                className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
-              />
-              <p className="text-xs text-white-secondary mt-1">Enter a 3-digit US area code</p>
+              <Select value={countryCode} onValueChange={setCountryCode} required>
+                <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                  <SelectValue placeholder="Select country" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="US">🇺🇸 United States (Requires A2P)</SelectItem>
+                  <SelectItem value="GB">🇬🇧 United Kingdom</SelectItem>
+                  <SelectItem value="CA">🇨🇦 Canada</SelectItem>
+                  <SelectItem value="AU">🇦🇺 Australia</SelectItem>
+                  <SelectItem value="DE">🇩🇪 Germany</SelectItem>
+                  <SelectItem value="FR">🇫🇷 France</SelectItem>
+                  <SelectItem value="ES">🇪🇸 Spain</SelectItem>
+                  <SelectItem value="IT">🇮🇹 Italy</SelectItem>
+                </SelectContent>
+              </Select>
+              {countryCode !== "US" && (
+                <p className="text-xs text-green-400 mt-1">✓ No A2P registration required for this country</p>
+              )}
             </div>
+
+            {countryCode === "US" && (
+              <div>
+                <Label htmlFor="areaCode" className="text-white">
+                  Area Code
+                </Label>
+                <Input
+                  id="areaCode"
+                  type="text"
+                  placeholder="402"
+                  value={areaCode}
+                  onChange={(e) => setAreaCode(e.target.value)}
+                  required
+                  maxLength={3}
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
+                />
+                <p className="text-xs text-white-secondary mt-1">Enter a 3-digit US area code</p>
+              </div>
+            )}
 
             <Button
               type="submit"
