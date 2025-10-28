@@ -10,7 +10,6 @@ export async function POST(req: Request) {
   try {
     const supabase = await createClient()
 
-    // Get authenticated user
     const {
       data: { user },
       error: authError,
@@ -21,9 +20,22 @@ export async function POST(req: Request) {
 
     const { phone_number, country_code } = await req.json()
 
-    // Phone number costs: $1 setup + $2/month recurring
-    const SETUP_FEE = 1.0
-    const MONTHLY_FEE = 2.0
+    const { data: setupPricing } = await supabase
+      .from("pricing_config")
+      .select("final_price")
+      .eq("item_type", "phone_number_setup")
+      .eq("country_code", country_code)
+      .single()
+
+    const { data: monthlyPricing } = await supabase
+      .from("pricing_config")
+      .select("final_price")
+      .eq("item_type", "phone_number_monthly")
+      .eq("country_code", country_code)
+      .single()
+
+    const SETUP_FEE = setupPricing?.final_price || 1.2
+    const MONTHLY_FEE = monthlyPricing?.final_price || 1.8
 
     // Get or create Stripe customer
     const { data: billing } = await supabase
@@ -59,7 +71,7 @@ export async function POST(req: Request) {
         country_code,
         monthly_fee: MONTHLY_FEE.toString(),
       },
-      description: `Phone Number Setup: ${phone_number}`,
+      description: `Phone Number Setup: ${phone_number} (${country_code})`,
     })
 
     // Create subscription for monthly recurring charge
@@ -71,7 +83,7 @@ export async function POST(req: Request) {
             currency: "usd",
             product_data: {
               name: `Phone Number: ${phone_number}`,
-              description: "Monthly phone number rental",
+              description: `Monthly rental (${country_code})`,
             },
             unit_amount: Math.round(MONTHLY_FEE * 100),
             recurring: {
@@ -84,6 +96,7 @@ export async function POST(req: Request) {
         user_id: user.id,
         type: "phone_number_monthly",
         phone_number,
+        country_code,
       },
     })
 

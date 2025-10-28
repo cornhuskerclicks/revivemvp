@@ -20,37 +20,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error: "Payment required",
-          message: "Phone number purchase requires a $1 setup fee + $2/month subscription",
+          message: "Please complete payment before purchasing a phone number",
           payment_required: true,
         },
         { status: 402 },
       )
-    }
-
-    if (country_code === "US") {
-      const { data: registration, error: regError } = await supabase
-        .from("a2p_registrations")
-        .select("*")
-        .eq("user_id", user.id)
-        .single()
-
-      if (regError || !registration) {
-        return NextResponse.json({ error: "No A2P registration found. A2P required for US numbers." }, { status: 400 })
-      }
-
-      if (!registration.campaign_id) {
-        return NextResponse.json(
-          { error: "Campaign not registered. Please complete A2P registration first." },
-          { status: 400 },
-        )
-      }
-
-      if (registration.payment_status !== "paid") {
-        return NextResponse.json(
-          { error: "A2P registration payment required before purchasing US numbers." },
-          { status: 402 },
-        )
-      }
     }
 
     const { data: twilioAccount, error: accountError } = await supabase
@@ -112,26 +86,14 @@ export async function POST(req: NextRequest) {
 
     const purchasedNumber = await purchaseResponse.json()
 
-    if (country_code === "US") {
-      await supabase
-        .from("a2p_registrations")
-        .update({
-          phone_number: purchasedNumber.phone_number,
-          country_code: country_code,
-          status: "number_assigned",
-        })
-        .eq("user_id", user.id)
-    }
-
     await supabase
       .from("twilio_accounts")
       .update({
         phone_number: purchasedNumber.phone_number,
         country_code: country_code,
         stripe_payment_intent_id: payment_intent_id,
+        stripe_subscription_id: subscription_id,
         payment_status: "paid",
-        setup_fee: 1.0,
-        monthly_cost: 2.0,
         next_billing_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       })
       .eq("user_id", user.id)
@@ -150,7 +112,10 @@ export async function POST(req: NextRequest) {
       phone_number: purchasedNumber.phone_number,
       country_code: country_code,
       requires_a2p: country_code === "US",
-      subscription_id: subscription_id,
+      message:
+        country_code === "US"
+          ? "Number purchased! Complete A2P registration before starting campaigns."
+          : "Number purchased and ready to use!",
     })
   } catch (err: any) {
     console.error("[v0] Buy Number Error:", err)

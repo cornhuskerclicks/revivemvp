@@ -19,9 +19,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // A2P registration costs: $4 brand + $10 campaign = $14 total
-    const BRAND_FEE = 4.0
-    const CAMPAIGN_FEE = 10.0
+    const { data: brandPricing } = await supabase
+      .from("pricing_config")
+      .select("final_price")
+      .eq("item_type", "a2p_brand")
+      .single()
+
+    const { data: campaignPricing } = await supabase
+      .from("pricing_config")
+      .eq("item_type", "a2p_campaign")
+      .select("final_price")
+      .single()
+
+    const BRAND_FEE = brandPricing?.final_price || 5.0
+    const CAMPAIGN_FEE = campaignPricing?.final_price || 12.5
     const TOTAL_FEE = BRAND_FEE + CAMPAIGN_FEE
 
     // Get or create Stripe customer
@@ -57,12 +68,16 @@ export async function POST(req: Request) {
         brand_fee: BRAND_FEE.toString(),
         campaign_fee: CAMPAIGN_FEE.toString(),
       },
-      description: "A2P Brand & Campaign Registration",
+      description: "A2P Brand & Campaign Registration (includes markup)",
     })
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
       amount: TOTAL_FEE,
+      breakdown: {
+        brand: BRAND_FEE,
+        campaign: CAMPAIGN_FEE,
+      },
     })
   } catch (err: any) {
     console.error("[v0] A2P payment error:", err)
