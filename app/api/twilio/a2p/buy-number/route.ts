@@ -13,8 +13,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { area_code, country_code = "US" } = await req.json()
+    const { area_code, country_code = "US", payment_intent_id, subscription_id } = await req.json()
     const areaCode = area_code || "402"
+
+    if (!payment_intent_id || !subscription_id) {
+      return NextResponse.json(
+        {
+          error: "Payment required",
+          message: "Phone number purchase requires a $1 setup fee + $2/month subscription",
+          payment_required: true,
+        },
+        { status: 402 },
+      )
+    }
 
     if (country_code === "US") {
       const { data: registration, error: regError } = await supabase
@@ -31,6 +42,13 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(
           { error: "Campaign not registered. Please complete A2P registration first." },
           { status: 400 },
+        )
+      }
+
+      if (registration.payment_status !== "paid") {
+        return NextResponse.json(
+          { error: "A2P registration payment required before purchasing US numbers." },
+          { status: 402 },
         )
       }
     }
@@ -110,14 +128,29 @@ export async function POST(req: NextRequest) {
       .update({
         phone_number: purchasedNumber.phone_number,
         country_code: country_code,
+        stripe_payment_intent_id: payment_intent_id,
+        payment_status: "paid",
+        setup_fee: 1.0,
+        monthly_cost: 2.0,
+        next_billing_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
       })
       .eq("user_id", user.id)
+
+    await supabase.from("phone_number_billing").insert({
+      user_id: user.id,
+      phone_number: purchasedNumber.phone_number,
+      amount: 1.0,
+      billing_type: "setup",
+      stripe_payment_intent_id: payment_intent_id,
+      status: "paid",
+    })
 
     return NextResponse.json({
       success: true,
       phone_number: purchasedNumber.phone_number,
       country_code: country_code,
       requires_a2p: country_code === "US",
+      subscription_id: subscription_id,
     })
   } catch (err: any) {
     console.error("[v0] Buy Number Error:", err)

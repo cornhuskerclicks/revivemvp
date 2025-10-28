@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { company_name, ein, vertical, contact_name, contact_email } = await req.json()
+    const { company_name, ein, vertical, contact_name, contact_email, payment_intent_id } = await req.json()
 
     if (!company_name || !ein || !vertical || !contact_name || !contact_email) {
       return NextResponse.json(
@@ -26,6 +26,17 @@ export async function POST(req: NextRequest) {
           required: ["company_name", "ein", "vertical", "contact_name", "contact_email"],
         },
         { status: 400 },
+      )
+    }
+
+    if (!payment_intent_id) {
+      return NextResponse.json(
+        {
+          error: "Payment required",
+          message: "A2P registration requires a $14 payment ($4 brand + $10 campaign)",
+          payment_required: true,
+        },
+        { status: 402 },
       )
     }
 
@@ -136,6 +147,9 @@ export async function POST(req: NextRequest) {
           vertical,
           contact_name,
           contact_email,
+          stripe_payment_intent_id: payment_intent_id,
+          payment_status: "paid",
+          total_paid: 14.0,
         },
         {
           onConflict: "user_id",
