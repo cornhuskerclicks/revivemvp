@@ -19,6 +19,32 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
+    const { data: billing } = await supabase
+      .from("user_billing")
+      .select("credits_remaining, status")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .single()
+
+    if (!billing || billing.credits_remaining <= 0) {
+      return NextResponse.json(
+        { error: "Insufficient SMS credits. Please upgrade your plan or purchase more credits." },
+        { status: 402 },
+      )
+    }
+
+    // Check if user has enough credits for all contacts
+    if (billing.credits_remaining < contacts.length) {
+      return NextResponse.json(
+        {
+          error: `Insufficient credits. You have ${billing.credits_remaining} credits but need ${contacts.length} to send to all contacts.`,
+          credits_remaining: billing.credits_remaining,
+          credits_needed: contacts.length,
+        },
+        { status: 402 },
+      )
+    }
+
     const { data: a2pReg } = await supabase
       .from("a2p_registrations")
       .select("*, twilio_accounts!inner(*)")
@@ -30,12 +56,10 @@ export async function POST(request: Request) {
     let fromNumber: string
 
     if (a2pReg && a2pReg.twilio_accounts) {
-      // Use A2P subaccount credentials
       twilioAccount = a2pReg.twilio_accounts
       fromNumber = a2pReg.phone_number
       console.log("[v0] Using A2P subaccount for sending")
     } else {
-      // Fall back to legacy Twilio account from campaign
       const { data: campaign, error: campaignError } = await supabase
         .from("sms_campaigns")
         .select("*, twilio_accounts!inner(*)")
@@ -97,6 +121,10 @@ export async function POST(request: Request) {
             p_details: `Message sent to ${contact.phone_number}`,
           })
 
+          await supabase.rpc("deduct_sms_credit", {
+            p_user_id: user.id,
+          })
+
           results.push({ phoneNumber: contact.phone_number, success: true, sid: data.sid })
         } else {
           await supabase.rpc("log_sms_message", {
@@ -124,7 +152,17 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({ success: true, results })
+    const { data: updatedBilling } = await supabase
+      .from("user_billing")
+      .select("credits_remaining")
+      .eq("user_id", user.id)
+      .single()
+
+    return NextResponse.json({
+      success: true,
+      results,
+      credits_remaining: updatedBilling?.credits_remaining || 0,
+    })
   } catch (error: any) {
     console.error("[v0] Twilio send error:", error)
     return NextResponse.json({ error: error.message || "Failed to send messages" }, { status: 500 })
