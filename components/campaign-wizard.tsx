@@ -22,6 +22,9 @@ export default function CampaignWizard({ userId, twilioAccount }: CampaignWizard
     name: "",
     twilioPhoneNumber: twilioAccount?.phone_number || "",
     batchSize: 50,
+    dripSize: 100,
+    dripIntervalDays: 3,
+    messageIntervals: [2, 5, 30],
     leads: [] as any[],
     messages: ["", "", ""],
   })
@@ -59,12 +62,19 @@ export default function CampaignWizard({ userId, twilioAccount }: CampaignWizard
         throw new Error("Failed to create campaign")
       }
 
+      const result = await response.json()
+      const campaignId = result.campaign.id
+
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("currentCampaignId", campaignId)
+      }
+
       toast({
         title: "Campaign created successfully",
         description: "Your campaign is ready to launch.",
       })
 
-      router.push("/dashboard?tab=campaigns")
+      router.push(`/campaigns/${campaignId}`)
     } catch (error) {
       console.error("[v0] Error creating campaign:", error)
       toast({
