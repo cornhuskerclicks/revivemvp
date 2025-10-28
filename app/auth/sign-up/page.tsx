@@ -10,18 +10,53 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { validatePassword } from "@/lib/password-validation"
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [fullName, setFullName] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [passwordErrors, setPasswordErrors] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const router = useRouter()
 
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPassword = e.target.value
+    setPassword(newPassword)
+
+    if (newPassword) {
+      const validation = validatePassword(newPassword)
+      setPasswordErrors(validation.errors)
+    } else {
+      setPasswordErrors([])
+    }
+  }
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    const validation = validatePassword(password)
+    if (!validation.isValid) {
+      setError(validation.errors.join(". "))
+      return
+    }
+
+    try {
+      const rateLimitResponse = await fetch("/api/auth/rate-limit", {
+        method: "POST",
+      })
+
+      if (!rateLimitResponse.ok) {
+        const data = await rateLimitResponse.json()
+        setError(data.error || "Too many requests. Please try again later.")
+        return
+      }
+    } catch (err) {
+      console.error("[v0] Rate limit check failed:", err)
+    }
+
     const supabase = createClient()
     setIsLoading(true)
     setError(null)
@@ -31,7 +66,11 @@ export default function SignUpPage() {
         email,
         password,
         options: {
-          emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/dashboard`,
+          emailRedirectTo:
+            process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ||
+            (process.env.NEXT_PUBLIC_APP_URL
+              ? `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
+              : "https://revive.aetherai.app/dashboard"),
           data: {
             full_name: fullName,
           },
@@ -55,7 +94,9 @@ export default function SignUpPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: process.env.NEXT_PUBLIC_APP_URL
+            ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`
+            : "https://revive.aetherai.app/auth/callback",
         },
       })
       if (error) throw error
@@ -161,9 +202,19 @@ export default function SignUpPage() {
                       type="password"
                       required
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={handlePasswordChange}
                       className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
                     />
+                    {passwordErrors.length > 0 && (
+                      <ul className="text-xs text-red-400 space-y-1">
+                        {passwordErrors.map((err, idx) => (
+                          <li key={idx}>• {err}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {password && passwordErrors.length === 0 && (
+                      <p className="text-xs text-green-400">✓ Password meets requirements</p>
+                    )}
                   </div>
                   {error && <p className="text-sm text-red-400">{error}</p>}
                   <Button

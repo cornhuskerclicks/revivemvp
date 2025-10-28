@@ -21,6 +21,21 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    try {
+      const rateLimitResponse = await fetch("/api/auth/rate-limit", {
+        method: "POST",
+      })
+
+      if (!rateLimitResponse.ok) {
+        const data = await rateLimitResponse.json()
+        setError(data.error || "Too many requests. Please try again later.")
+        return
+      }
+    } catch (err) {
+      console.error("[v0] Rate limit check failed:", err)
+    }
+
     const supabase = createClient()
     setIsLoading(true)
     setError(null)
@@ -48,7 +63,9 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: process.env.NEXT_PUBLIC_APP_URL
+            ? `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`
+            : "https://revive.aetherai.app/auth/callback",
         },
       })
       if (error) throw error

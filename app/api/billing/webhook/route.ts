@@ -1,13 +1,11 @@
 import { headers } from "next/headers"
 import { NextResponse } from "next/server"
 import Stripe from "stripe"
-import { createClient } from "@supabase/supabase-js"
+import { createServerClient } from "@/lib/supabase/server"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-12-18.acacia",
 })
-
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
 export async function POST(req: Request) {
   const body = await req.text()
@@ -29,6 +27,8 @@ export async function POST(req: Request) {
 
   console.log("[v0] Stripe webhook event:", event.type)
 
+  const supabase = await createServerClient()
+
   try {
     switch (event.type) {
       case "checkout.session.completed": {
@@ -44,15 +44,24 @@ export async function POST(req: Request) {
         // Get plan details
         const { data: plan } = await supabase.from("billing_plans").select("monthly_credits").eq("id", planId).single()
 
-        // Create or update user billing record
-        await supabase.from("user_billing").upsert({
-          user_id: userId,
-          plan_id: planId,
-          stripe_customer_id: session.customer as string,
-          stripe_subscription_id: session.subscription as string,
-          credits_remaining: plan?.monthly_credits || 0,
-          renew_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          status: "active",
+        const { error: upsertError } = await supabase.rpc("upsert_user_billing", {
+          p_user_id: userId,
+          p_plan_id: planId,
+          p_stripe_customer_id: session.customer as string,
+          p_stripe_subscription_id: session.subscription as string,
+          p_credits_remaining: plan?.monthly_credits || 0,
+          p_renew_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          p_status: "active",
+        })
+
+        if (upsertError) {
+          console.error("[v0] Error upserting billing:", upsertError)
+        }
+
+        await supabase.rpc("log_billing_audit", {
+          p_user_id: userId,
+          p_event_type: "checkout.session.completed",
+          p_event_data: JSON.stringify(session),
         })
 
         console.log("[v0] Billing record created for user:", userId)
@@ -82,17 +91,56 @@ export async function POST(req: Request) {
           .eq("id", userBilling.plan_id)
           .single()
 
-        // Renew credits
-        await supabase
-          .from("user_billing")
-          .update({
-            credits_remaining: plan?.monthly_credits || 0,
-            renew_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            status: "active",
-          })
-          .eq("stripe_customer_id", customerId)
+        const { error: renewError } = await supabase.rpc("renew_user_credits", {
+          p_stripe_customer_id: customerId,
+          p_credits: plan?.monthly_credits || 0,
+        })
+
+        if (renewError) {
+          console.error("[v0] Error renewing credits:", renewError)
+        }
+
+        await supabase.rpc("log_billing_audit", {
+          p_user_id: userBilling.user_id,
+          p_event_type: "invoice.payment_succeeded",
+          p_event_data: JSON.stringify(invoice),
+        })
 
         console.log("[v0] Credits renewed for user:", userBilling.user_id)
+        break
+      }
+
+      case "customer.subscription.updated": {
+        const subscription = event.data.object as Stripe.Subscription
+        const customerId = subscription.customer as string
+
+        // Get user billing record
+        const { data: userBilling } = await supabase
+          .from("user_billing")
+          .select("user_id")
+          .eq("stripe_customer_id", customerId)
+          .single()
+
+        if (!userBilling) {
+          console.error("[v0] No billing record found for customer:", customerId)
+          break
+        }
+
+        const status =
+          subscription.status === "active" ? "active" : subscription.status === "canceled" ? "canceled" : "inactive"
+
+        await supabase.rpc("update_subscription_status", {
+          p_stripe_customer_id: customerId,
+          p_status: status,
+        })
+
+        await supabase.rpc("log_billing_audit", {
+          p_user_id: userBilling.user_id,
+          p_event_type: "customer.subscription.updated",
+          p_event_data: JSON.stringify(subscription),
+        })
+
+        console.log("[v0] Subscription updated for customer:", customerId)
         break
       }
 
@@ -100,8 +148,28 @@ export async function POST(req: Request) {
         const subscription = event.data.object as Stripe.Subscription
         const customerId = subscription.customer as string
 
-        // Mark subscription as canceled
-        await supabase.from("user_billing").update({ status: "canceled" }).eq("stripe_customer_id", customerId)
+        // Get user billing record
+        const { data: userBilling } = await supabase
+          .from("user_billing")
+          .select("user_id")
+          .eq("stripe_customer_id", customerId)
+          .single()
+
+        if (!userBilling) {
+          console.error("[v0] No billing record found for customer:", customerId)
+          break
+        }
+
+        await supabase.rpc("update_subscription_status", {
+          p_stripe_customer_id: customerId,
+          p_status: "canceled",
+        })
+
+        await supabase.rpc("log_billing_audit", {
+          p_user_id: userBilling.user_id,
+          p_event_type: "customer.subscription.deleted",
+          p_event_data: JSON.stringify(subscription),
+        })
 
         console.log("[v0] Subscription canceled for customer:", customerId)
         break
