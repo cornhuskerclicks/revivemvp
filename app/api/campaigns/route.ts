@@ -13,9 +13,8 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, twilioPhoneNumber, batchSize, leads, messages } = body
+    const { name, twilioPhoneNumber, batchSize, leads, messages, dripSize, dripIntervalDays, messageIntervals } = body
 
-    // Create campaign
     const { data: campaign, error: campaignError } = await supabase
       .from("sms_campaigns")
       .insert({
@@ -25,18 +24,21 @@ export async function POST(request: Request) {
         batch_size: batchSize,
         total_leads: leads.length,
         status: "draft",
+        drip_size: dripSize || 100,
+        drip_interval_days: dripIntervalDays || 3,
+        message_interval_days: messageIntervals || [2, 5, 30],
       })
       .select()
       .single()
 
     if (campaignError) throw campaignError
 
-    // Insert contacts
     const contactsToInsert = leads.map((lead: any) => ({
       campaign_id: campaign.id,
       lead_name: lead.lead_name,
       phone_number: lead.phone_number,
       tags: lead.tags || [],
+      status: "uncontacted",
     }))
 
     const { error: contactsError } = await supabase.from("campaign_contacts").insert(contactsToInsert)

@@ -29,14 +29,22 @@ export async function POST(request: Request) {
         console.error("[v0] Error handling inbound message:", error)
       }
 
-      // Update contact status
-      const { data: contact } = await supabase.from("campaign_contacts").select("id").eq("phone_number", from).single()
+      const { data: contact } = await supabase
+        .from("campaign_contacts")
+        .select("id, campaign_id")
+        .eq("phone_number", from)
+        .single()
 
       if (contact) {
+        // Use the new RPC function to mark as responded and cancel queue
+        await supabase.rpc("mark_contact_responded", {
+          p_phone_number: from,
+          p_campaign_id: contact.campaign_id,
+        })
+
         await supabase
           .from("campaign_contacts")
           .update({
-            status: "replied",
             last_message_at: new Date().toISOString(),
           })
           .eq("id", contact.id)

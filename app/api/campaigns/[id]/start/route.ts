@@ -13,7 +13,17 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Update campaign status to active
+    const { data: campaign, error: campaignError } = await supabase
+      .from("sms_campaigns")
+      .select("*")
+      .eq("id", params.id)
+      .eq("user_id", user.id)
+      .single()
+
+    if (campaignError || !campaign) {
+      return NextResponse.json({ error: "Campaign not found" }, { status: 404 })
+    }
+
     const { error: updateError } = await supabase
       .from("sms_campaigns")
       .update({ status: "active" })
@@ -24,18 +34,34 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       throw updateError
     }
 
-    // Get campaign contacts to send first batch
-    const { data: contacts } = await supabase
-      .from("campaign_contacts")
-      .select("*")
-      .eq("campaign_id", params.id)
-      .eq("status", "pending")
-      .limit(50)
+    const { data: queueResult, error: queueError } = await supabase.rpc("queue_campaign_batch", {
+      p_campaign_id: params.id,
+      p_batch_size: campaign.drip_size || 100,
+    })
 
-    // Trigger sending via Twilio (you can implement batch sending here)
-    // For now, we just update the status
+    if (queueError) {
+      console.error("[v0] Error queuing batch:", queueError)
+      throw queueError
+    }
 
-    return NextResponse.json({ success: true, message: "Campaign started" })
+    await supabase.from("campaign_audit_logs").insert({
+      campaign_id: params.id,
+      user_id: user.id,
+      action: "campaign_started",
+      details: {
+        batch_size: campaign.drip_size,
+        queued_contacts: queueResult,
+        message_intervals: campaign.message_interval_days,
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: "Campaign started successfully",
+      queued_contacts: queueResult,
+      drip_size: campaign.drip_size,
+      intervals: campaign.message_interval_days,
+    })
   } catch (error: any) {
     console.error("[v0] Error starting campaign:", error)
     return NextResponse.json({ error: error.message }, { status: 500 })

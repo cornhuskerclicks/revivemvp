@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import NavBar from "@/components/nav-bar"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Users, MessageSquare, CheckCircle, Clock } from "lucide-react"
+import { ArrowLeft, Users, MessageSquare, CheckCircle, Clock, Zap, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 
@@ -37,6 +37,23 @@ export default async function CampaignDetailPage({ params }: { params: { id: str
     .eq("campaign_id", params.id)
     .order("created_at", { ascending: false })
     .limit(50)
+
+  const contactsByStatus = {
+    uncontacted: contacts?.filter((c) => c.status === "uncontacted").length || 0,
+    "1st_sent": contacts?.filter((c) => c.status === "1st_sent").length || 0,
+    "2nd_sent": contacts?.filter((c) => c.status === "2nd_sent").length || 0,
+    "3rd_sent": contacts?.filter((c) => c.status === "3rd_sent").length || 0,
+    responded: contacts?.filter((c) => c.status === "responded").length || 0,
+    failed: contacts?.filter((c) => c.status === "failed").length || 0,
+  }
+
+  const totalProcessed =
+    contactsByStatus["1st_sent"] +
+    contactsByStatus["2nd_sent"] +
+    contactsByStatus["3rd_sent"] +
+    contactsByStatus.responded
+
+  const progressPercentage = campaign.total_leads > 0 ? Math.round((totalProcessed / campaign.total_leads) * 100) : 0
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -73,9 +90,67 @@ export default async function CampaignDetailPage({ params }: { params: { id: str
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-4xl font-bold text-white mb-2">{campaign.name}</h1>
-              <p className="text-white-secondary">Campaign details and performance</p>
+              <p className="text-white-secondary">Sleeping Beauty drip campaign • {progressPercentage}% complete</p>
             </div>
             <Badge className={getStatusColor(campaign.status)}>{campaign.status}</Badge>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div className="p-6 rounded-xl glass glass-border">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <Zap className="h-5 w-5 text-aether" />
+                Workflow Progress
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-white-secondary text-sm">Uncontacted</span>
+                  <span className="text-white font-semibold">{contactsByStatus.uncontacted}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-white-secondary text-sm">1st Message Sent</span>
+                  <span className="text-blue-400 font-semibold">{contactsByStatus["1st_sent"]}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-white-secondary text-sm">2nd Message Sent</span>
+                  <span className="text-purple-400 font-semibold">{contactsByStatus["2nd_sent"]}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-white-secondary text-sm">3rd Message Sent</span>
+                  <span className="text-yellow-400 font-semibold">{contactsByStatus["3rd_sent"]}</span>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                  <span className="text-white-secondary text-sm">Responded</span>
+                  <span className="text-green-400 font-semibold">{contactsByStatus.responded}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-xl glass glass-border">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <RefreshCw className="h-5 w-5 text-aether" />
+                Automation Settings
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-white-secondary text-sm">Drip Size</span>
+                  <span className="text-white font-semibold">{campaign.drip_size || 100} leads/batch</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-white-secondary text-sm">Drip Interval</span>
+                  <span className="text-white font-semibold">{campaign.drip_interval_days || 3} days</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-white-secondary text-sm">Message Intervals</span>
+                  <span className="text-white font-semibold">
+                    {campaign.message_interval_days?.join(", ") || "2, 5, 30"} days
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-white-secondary text-sm">Current Batch</span>
+                  <span className="text-aether font-semibold">#{campaign.current_batch || 0}</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="grid md:grid-cols-4 gap-4">
