@@ -13,9 +13,9 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { campaignId, messageBody, phoneNumbers } = body
+    const { campaignId, messageBody, contacts } = body
 
-    if (!campaignId || !messageBody || !phoneNumbers || phoneNumbers.length === 0) {
+    if (!campaignId || !messageBody || !contacts || contacts.length === 0) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
@@ -37,8 +37,7 @@ export async function POST(request: Request) {
 
     const results = []
 
-    // Send messages to each phone number
-    for (const phoneNumber of phoneNumbers) {
+    for (const contact of contacts) {
       try {
         const response = await fetch(twilioUrl, {
           method: "POST",
@@ -47,7 +46,7 @@ export async function POST(request: Request) {
             "Content-Type": "application/x-www-form-urlencoded",
           },
           body: new URLSearchParams({
-            To: phoneNumber,
+            To: contact.phone_number,
             From: campaign.twilio_phone_number,
             Body: messageBody,
           }),
@@ -56,36 +55,45 @@ export async function POST(request: Request) {
         const data = await response.json()
 
         if (response.ok) {
-          // Log successful message
-          await supabase.from("sms_messages").insert({
-            campaign_id: campaignId,
-            message_body: messageBody,
-            message_type: "outbound",
-            direction: "outbound",
-            status: "sent",
-            twilio_sid: data.sid,
-            sent_at: new Date().toISOString(),
+          await supabase.rpc("log_sms_message", {
+            p_campaign_id: campaignId,
+            p_contact_id: contact.id,
+            p_direction: "outbound",
+            p_message_body: messageBody,
+            p_status: "sent",
+            p_twilio_sid: data.sid,
           })
 
-          // Update campaign stats
-          await supabase.rpc("increment_campaign_sent", { campaign_id: campaignId })
+          await supabase.rpc("log_campaign_event", {
+            p_campaign_id: campaignId,
+            p_event_type: "Message Sent",
+            p_details: `Message sent to ${contact.phone_number}`,
+          })
 
-          results.push({ phoneNumber, success: true, sid: data.sid })
+          results.push({ phoneNumber: contact.phone_number, success: true, sid: data.sid })
         } else {
-          // Log failed message
-          await supabase.from("sms_messages").insert({
-            campaign_id: campaignId,
-            message_body: messageBody,
-            message_type: "outbound",
-            direction: "outbound",
-            status: "failed",
-            error_message: data.message,
+          await supabase.rpc("log_sms_message", {
+            p_campaign_id: campaignId,
+            p_contact_id: contact.id,
+            p_direction: "outbound",
+            p_message_body: messageBody,
+            p_status: "failed",
+            p_twilio_sid: null,
           })
 
-          results.push({ phoneNumber, success: false, error: data.message })
+          await supabase
+            .from("sms_messages")
+            .update({ error_message: data.message })
+            .eq("campaign_id", campaignId)
+            .eq("contact_id", contact.id)
+            .eq("status", "failed")
+            .order("created_at", { ascending: false })
+            .limit(1)
+
+          results.push({ phoneNumber: contact.phone_number, success: false, error: data.message })
         }
       } catch (error: any) {
-        results.push({ phoneNumber, success: false, error: error.message })
+        results.push({ phoneNumber: contact.phone_number, success: false, error: error.message })
       }
     }
 

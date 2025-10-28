@@ -12,29 +12,27 @@ export async function POST(request: Request) {
 
     const supabase = await createClient()
 
-    // Handle incoming message (reply from lead)
     if (body && from) {
-      // Find the contact by phone number
-      const { data: contact } = await supabase
-        .from("campaign_contacts")
-        .select("*, sms_campaigns(*)")
-        .eq("phone_number", from)
-        .single()
+      // Convert form data to JSON payload for RPC
+      const payload = {
+        MessageSid: messageSid,
+        MessageStatus: messageStatus,
+        From: from,
+        To: to,
+        Body: body,
+      }
+
+      // Call the RPC function to handle inbound message
+      const { error } = await supabase.rpc("handle_inbound_message", { payload })
+
+      if (error) {
+        console.error("[v0] Error handling inbound message:", error)
+      }
+
+      // Update contact status
+      const { data: contact } = await supabase.from("campaign_contacts").select("id").eq("phone_number", from).single()
 
       if (contact) {
-        // Log the incoming message
-        await supabase.from("sms_messages").insert({
-          campaign_id: contact.campaign_id,
-          contact_id: contact.id,
-          message_body: body,
-          message_type: "reply",
-          direction: "inbound",
-          status: "received",
-          twilio_sid: messageSid,
-          created_at: new Date().toISOString(),
-        })
-
-        // Update contact status
         await supabase
           .from("campaign_contacts")
           .update({
@@ -42,9 +40,6 @@ export async function POST(request: Request) {
             last_message_at: new Date().toISOString(),
           })
           .eq("id", contact.id)
-
-        // Update campaign reply count
-        await supabase.rpc("increment_campaign_replies", { campaign_id: contact.campaign_id })
       }
     }
 
@@ -57,14 +52,23 @@ export async function POST(request: Request) {
 
         if (messageStatus === "delivered") {
           updateData.delivered_at = new Date().toISOString()
-          // Update campaign delivered count
-          await supabase.rpc("increment_campaign_delivered", { campaign_id: message.campaign_id })
-        } else if (messageStatus === "failed" || messageStatus === "undelivered") {
-          // Update campaign failed count
-          await supabase.rpc("increment_campaign_failed", { campaign_id: message.campaign_id })
         }
 
         await supabase.from("sms_messages").update(updateData).eq("twilio_sid", messageSid)
+
+        if (messageStatus === "delivered") {
+          await supabase.rpc("log_campaign_event", {
+            p_campaign_id: message.campaign_id,
+            p_event_type: "Message Delivered",
+            p_details: `Message ${messageSid} delivered successfully`,
+          })
+        } else if (messageStatus === "failed" || messageStatus === "undelivered") {
+          await supabase.rpc("log_campaign_event", {
+            p_campaign_id: message.campaign_id,
+            p_event_type: "Message Failed",
+            p_details: `Message ${messageSid} failed with status: ${messageStatus}`,
+          })
+        }
       }
     }
 
