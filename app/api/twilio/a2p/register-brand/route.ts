@@ -5,12 +5,15 @@ export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient()
 
+    console.log("[v0] Starting brand registration")
+
     // Get authenticated user
     const {
       data: { user },
       error: authError,
     } = await supabase.auth.getUser()
     if (authError || !user) {
+      console.log("[v0] Auth error:", authError)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -26,24 +29,62 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    console.log("[v0] Checking for existing Twilio account")
+
     let { data: twilioAccount } = await supabase.from("twilio_accounts").select("*").eq("user_id", user.id).single()
 
     if (!twilioAccount) {
-      // Create subaccount if it doesn't exist
-      const createResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/twilio/subaccount/create`, {
+      console.log("[v0] No Twilio account found, creating subaccount")
+
+      const subaccountResponse = await fetch("https://api.twilio.com/2010-04-01/Accounts.json", {
         method: "POST",
         headers: {
-          Cookie: req.headers.get("cookie") || "",
+          Authorization:
+            "Basic " +
+            Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString("base64"),
+          "Content-Type": "application/x-www-form-urlencoded",
         },
+        body: new URLSearchParams({
+          FriendlyName: `${company_name} - RE:VIVE Subaccount`,
+        }),
       })
 
-      if (!createResponse.ok) {
-        throw new Error("Failed to create Twilio subaccount")
+      if (!subaccountResponse.ok) {
+        const error = await subaccountResponse.text()
+        console.error("[v0] Subaccount creation failed:", error)
+        return NextResponse.json(
+          {
+            error: "Failed to create Twilio subaccount",
+            details: error,
+          },
+          { status: 500 },
+        )
       }
 
-      const createData = await createResponse.json()
-      twilioAccount = createData.account
+      const subaccount = await subaccountResponse.json()
+      console.log("[v0] Subaccount created:", subaccount.sid)
+
+      const { data: newAccount, error: dbError } = await supabase
+        .from("twilio_accounts")
+        .insert({
+          user_id: user.id,
+          account_sid: subaccount.sid,
+          auth_token: subaccount.auth_token,
+          subaccount_sid: subaccount.sid,
+          is_verified: true,
+        })
+        .select()
+        .single()
+
+      if (dbError) {
+        console.error("[v0] Database error:", dbError)
+        return NextResponse.json({ error: `Database error: ${dbError.message}` }, { status: 500 })
+      }
+
+      twilioAccount = newAccount
     }
+
+    console.log("[v0] Registering brand with Twilio")
 
     const brandResponse = await fetch("https://messaging.twilio.com/v1/a2p/BrandRegistrations", {
       method: "POST",
@@ -69,23 +110,37 @@ export async function POST(req: NextRequest) {
     if (!brandResponse.ok) {
       const error = await brandResponse.text()
       console.error("[v0] Brand registration failed:", error)
-      throw new Error(`Failed to register brand: ${error}`)
+      return NextResponse.json(
+        {
+          error: "Failed to register brand with Twilio",
+          details: error,
+        },
+        { status: 500 },
+      )
     }
 
     const brand = await brandResponse.json()
 
+    console.log("[v0] Brand registered:", brand.sid)
+
     const { data: registration, error: dbError } = await supabase
       .from("a2p_registrations")
-      .update({
-        brand_id: brand.sid,
-        status: "brand_registered",
-        company_name,
-        ein,
-        vertical,
-        contact_name,
-        contact_email,
-      })
-      .eq("user_id", user.id)
+      .upsert(
+        {
+          user_id: user.id,
+          subaccount_sid: twilioAccount.subaccount_sid,
+          brand_id: brand.sid,
+          status: "brand_registered",
+          company_name,
+          ein,
+          vertical,
+          contact_name,
+          contact_email,
+        },
+        {
+          onConflict: "user_id",
+        },
+      )
       .select()
       .single()
 
@@ -93,6 +148,8 @@ export async function POST(req: NextRequest) {
       console.error("[v0] Database error:", dbError)
       throw new Error(`Database error: ${dbError.message}`)
     }
+
+    console.log("[v0] Brand registration complete")
 
     return NextResponse.json({
       success: true,
