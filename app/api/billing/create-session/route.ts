@@ -21,16 +21,29 @@ export async function POST(req: Request) {
 
     const { plan_id } = await req.json()
 
+    console.log("[v0] Creating checkout session for plan_id:", plan_id)
+
     // Get plan details
     const { data: plan, error: planError } = await supabase.from("billing_plans").select("*").eq("id", plan_id).single()
+
+    console.log("[v0] Plan data:", plan)
+    console.log("[v0] Plan error:", planError)
 
     if (planError || !plan) {
       return NextResponse.json({ error: "Plan not found" }, { status: 404 })
     }
 
     if (!plan.stripe_price_id) {
-      return NextResponse.json({ error: "Stripe price ID not configured for this plan" }, { status: 400 })
+      console.error("[v0] Missing stripe_price_id for plan:", plan.name)
+      return NextResponse.json(
+        {
+          error: `Stripe price ID not configured for ${plan.name} plan. Please contact support.`,
+        },
+        { status: 400 },
+      )
     }
+
+    console.log("[v0] Using stripe_price_id:", plan.stripe_price_id)
 
     // Check if user already has a Stripe customer ID
     const { data: existingBilling } = await supabase
@@ -50,6 +63,7 @@ export async function POST(req: Request) {
         },
       })
       customerId = customer.id
+      console.log("[v0] Created new Stripe customer:", customerId)
     }
 
     // Create checkout session
@@ -70,9 +84,16 @@ export async function POST(req: Request) {
       },
     })
 
+    console.log("[v0] Checkout session created:", session.id)
     return NextResponse.json({ url: session.url })
   } catch (err: any) {
     console.error("[v0] Billing session error:", err)
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: err.message,
+        details: err.type || "unknown_error",
+      },
+      { status: 500 },
+    )
   }
 }
